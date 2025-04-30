@@ -1,0 +1,42 @@
+# Node modules
+node_modules/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Runtime files
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# dotenv environment files
+.env
+
+# System files
+.DS_Store       # macOS
+Thumbs.db       # Windows
+
+# IDEs y editores
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# Coverage (para pruebas)
+coverage/
+.nyc_output/
+
+# Build (si compilas con Babel, TypeScript, etc.)
+dist/
+build/
+out/
+
+# archivos de guía
+sacar_cita.txt
+atender.txt
+
+
