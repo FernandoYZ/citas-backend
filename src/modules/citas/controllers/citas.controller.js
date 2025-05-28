@@ -1,19 +1,73 @@
-import { Conexion, ConexionExterna } from "../../config/database.js";
-import * as CitasService from "./citas.service.js";
-import { manejarError, ERRORES } from "../../utils/errorHandler.js";
-import { obtenerFechaHoraLima } from "../../utils/fecha.js"
+// citas.controller.js
+import { Conexion, ConexionExterna } from "../../../config/database.js";
+import { citasService } from "../services/citas.service.js";
+import * as Cita from "../citas.service.js";
+import { manejarError } from "../../../utils/errorHandler.js";
+import { obtenerFechaHoraLima } from "../../../utils/fecha.js"
 import sql from "mssql";
 
 const fechaHoraLima = obtenerFechaHoraLima()
 // Datos para la tabla
 export const obtenerCitasSeparadas = async (req, res) => {
   try {
-    const { fecha } = req.query;
-    const citas = await CitasService.obtenerCitasSeparadas(fecha);
+    const { fechaInicio, fechaFin } = req.query;
+    
+    // Validar que las fechas sean strings válidos
+    if (!fechaInicio || typeof fechaInicio !== 'string') {
+      return res.status(400).json({ error: 'La fecha de inicio debe ser un string en formato YYYY-MM-DD' });
+    }
+    
+    // Validar el formato de las fechas
+    if (!fechaInicio.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      return res.status(400).json({ error: 'La fecha debe tener el formato YYYY-MM-DD' });
+    }
 
+    // Si no se proporciona fechaFin, usar fechaInicio como fecha única
+    const rangoFin = fechaFin && fechaFin.match(/^\d{4}-\d{2}-\d{2}$/) ? fechaFin : fechaInicio;
+    
+    // Construir filtro de especialidades si existe
+    let filtroEspecialidades = '';
+    
+    // Verificar si req.filtroEspecialidades existe y tiene elementos
+    if (req.filtroEspecialidades && Array.isArray(req.filtroEspecialidades) && req.filtroEspecialidades.length > 0) {
+      // Construir la parte WHERE con los IDs de especialidad
+      filtroEspecialidades = ` AND s.IdServicio IN (${req.filtroEspecialidades.join(',')})`;
+      
+      // Si es médico y tiene ID de médico, filtrar también por médico
+      if (req.usuario.isMedico && req.usuario.idMedico) {
+        filtroEspecialidades += ` AND me.IdMedico = ${req.usuario.idMedico}`;
+      }
+    }
+    
+    // Usar el servicio para obtener datos con el filtro
+    const citas = await citasService.obtenerCitasSeparadas(fechaInicio, rangoFin, filtroEspecialidades);
+    
+    // Responder con los datos
     res.status(200).json(citas);
   } catch (error) {
-    console.error(error);
+    console.error("Error en controlador de citas:", error);
+    res.status(500).json({ 
+      error: 'Error en servicio de citas', 
+      message: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined 
+    });
+  }
+};
+
+export const obtenerCitaDetallada = async (req, res) => {
+  try {
+    const { idCita, idPaciente } = req.params;
+    
+    if (!idCita || !idPaciente) {
+      return res.status(400).json({ error: 'Se requieren idCita e idPaciente' });
+    }
+    
+    // Usar el servicio para obtener detalles completos
+    const citaDetallada = await citasService.obtenerCitaDetallada(idCita, idPaciente);
+    
+    res.status(200).json(citaDetallada);
+  } catch (error) {
+    console.error("Error al obtener detalle de cita:", error);
     manejarError(error, res);
   }
 };
@@ -22,11 +76,111 @@ export const obtenerCitasSeparadas = async (req, res) => {
 export const selectEspecialidad = async (req, res) => {
   try {
     const { fecha } = req.query;
-    const especialidades = await CitasService.selectEspecialidad(fecha);
-    res.status(200).json(especialidades);
+    if (!fecha) {
+      return res.status(400).json({
+        message: "Se requiere la fecha",
+        required: ["Fecha"]
+      });
+    }
+
+    const pool = await Conexion();
+
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: "Token de autenticación no proporcionado",
+      });
+    }
+
+    const { id: idUsuarioValido, isMedico, idMedico, roles } = req.usuario || {};
+
+    // Roles específicos
+    const ROLES = {
+      ADMIN: 1,
+      RECEPCION: 195,
+      MEDICO_CE: 149,
+      PROGRAMAS: 154
+    };
+
+    const esAdmin = Array.isArray(roles) && roles.includes(ROLES.ADMIN);
+    const esRecepcion = Array.isArray(roles) && roles.includes(ROLES.RECEPCION);
+    const esMedicoCE = Array.isArray(roles) && roles.includes(ROLES.MEDICO_CE);
+    const esProgramas = Array.isArray(roles) && roles.includes(ROLES.PROGRAMAS);
+    
+    const especialidadesPermitidas = [145, 149, 230, 312, 346, 347, 358, 367, 407];
+
+    // Comienza la consulta base
+    let queryBase = `
+      SELECT DISTINCT 
+        PM.IdServicio, 
+        LOWER(S.Nombre) AS Nombre
+      FROM ProgramacionMedica PM
+      INNER JOIN Servicios S ON PM.IdServicio = S.IdServicio
+      INNER JOIN Medicos M ON PM.IdMedico = M.IdMedico
+      INNER JOIN Empleados E ON M.IdEmpleado = E.IdEmpleado
+      WHERE PM.Fecha = @fecha
+        AND PM.IdServicio IN (${especialidadesPermitidas.join(',')})
+    `;
+
+    // Filtros según el tipo de usuario
+    
+    // Los médicos CE, admins y recepcionistas pueden ver todas las especialidades
+    if (esAdmin || esRecepcion || esMedicoCE) {
+      // No añadir filtros adicionales, pueden ver todo
+      console.log("Usuario con acceso total a especialidades");
+    } 
+    // Los médicos de programas solo ven sus propias especialidades y atenciones
+    else if (esProgramas && idMedico) {
+      console.log("Médico de programas: filtrando por idMedico", idMedico);
+      queryBase += ` AND M.IdMedico = @idMedico`;
+    }
+    // Cualquier otro tipo de médico ve sus especialidades pero no necesariamente solo sus atenciones
+    else if (isMedico && idUsuarioValido) {
+      console.log("Médico: filtrando por especialidades asociadas al empleado", idUsuarioValido);
+      queryBase += ` AND E.IdEmpleado = @idUsuarioValido`;
+    } 
+    // Usuarios sin permisos especiales
+    else if (!isMedico && !esAdmin && !esRecepcion) {
+      return res.status(403).json({
+        success: false,
+        message: "No tienes permisos para ver estas especialidades",
+      });
+    }
+
+    // Filtro adicional si se especifican especialidades en el middleware
+    if (req.filtroEspecialidades && Array.isArray(req.filtroEspecialidades) && req.filtroEspecialidades.length > 0) {
+      const idsFiltrados = req.filtroEspecialidades.filter(id => !isNaN(id)).join(',');
+      queryBase += ` AND PM.IdServicio IN (${idsFiltrados})`;
+    }
+
+    queryBase += ` ORDER BY Nombre`;
+
+    // Crear request y añadir parámetros
+    const request = pool.request()
+      .input('fecha', sql.Date, fecha)
+      .input('idUsuarioValido', sql.Int, idUsuarioValido);
+      
+    // Añadir idMedico solo si se está usando en la consulta
+    if (esProgramas && idMedico) {
+      request.input('idMedico', sql.Int, idMedico);
+    }
+      
+    const result = await request.query(queryBase);
+
+    // Verificar resultados
+    if (result.recordset.length === 0) {
+      console.log("No se encontraron especialidades para los criterios de filtro");
+    }
+
+    res.status(200).json(result.recordset);
+    
   } catch (error) {
     console.error("Error al verificar disponibilidad:", error);
-    manejarError(error, res);
+    res.status(500).json({
+      message: "Error al mostrar la relación de Especialidades",
+      error: error.message
+    });
   }
 };
 
@@ -34,13 +188,14 @@ export const selectEspecialidad = async (req, res) => {
 export const selectMedicos = async (req, res) => {
   try {
     const { fecha, idServicio } = req.query;
-    const medicos = await CitasService.selectMedicos(fecha, idServicio);
+    const medicos = await Cita.selectMedicos(fecha, idServicio);
     return res.status(200).json(medicos);
   } catch (error) {
     console.error("Error al mostrar los médicos:", error);
     manejarError(error, res);
   }
 };
+
 
 // función para mostrar las horas disponibles en un select
 export const selectHorasDisponibles = async (req, res) => {
@@ -63,53 +218,47 @@ export const selectHorasDisponibles = async (req, res) => {
       .input("idServicio", sql.Int, idServicio) // Parámetro idServicio
       .input("idMedico", sql.Int, idMedico) // Aseguramos que el parámetro idMedico esté presente
       .query(`
-DECLARE @HoraActual TIME = CONVERT(TIME, DATEADD(HOUR, -5, GETUTCDATE()));
-
-WITH HorasProgramadas AS (
-    SELECT 
-        IdProgramacion,
-        HoraInicio,
-        HoraFin,
-        TiempoPromedioAtencion
-    FROM 
-        ProgramacionMedica
-    WHERE 
-        IdMedico = @idMedico
-        AND CONVERT(DATE, Fecha) = CONVERT(DATE, @fecha)
-        AND IdServicio = @idServicio
-),
-HorasOcupadas AS (
-    SELECT 
-        HoraInicio
-    FROM 
-        Citas
-    WHERE 
-        Fecha = @fecha
-        AND IdServicio = @idServicio
-),
-Numeros AS (
-    SELECT TOP (100) ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS N
-    FROM sys.all_objects
-)
-SELECT 
-    FORMAT(DATEADD(MINUTE, (N.N - 1) * HP.TiempoPromedioAtencion, HP.HoraInicio), 'HH:mm') AS HoraInicioDisponible,
-    FORMAT(DATEADD(MINUTE, N.N * HP.TiempoPromedioAtencion, HP.HoraInicio), 'HH:mm') AS HoraFinDisponible
-FROM 
-    HorasProgramadas HP
-JOIN 
-    Numeros N ON DATEADD(MINUTE, (N.N - 1) * HP.TiempoPromedioAtencion, HP.HoraInicio) < HP.HoraFin
-WHERE 
-    NOT EXISTS (
-        SELECT 1
-        FROM HorasOcupadas HO
-        WHERE HO.HoraInicio = DATEADD(MINUTE, (N.N - 1) * HP.TiempoPromedioAtencion, HP.HoraInicio)
-    )
-    AND (
-        @fecha > CONVERT(DATE, DATEADD(HOUR, -5, GETUTCDATE())) -- si la fecha es futura, mostrar todo
-        OR CONVERT(TIME, DATEADD(MINUTE, (N.N - 1) * HP.TiempoPromedioAtencion, HP.HoraInicio)) >= @HoraActual
-    )
-ORDER BY 
-    HoraInicioDisponible;
+                WITH HorasProgramadas AS (
+                    SELECT 
+                        IdProgramacion,
+                        HoraInicio,
+                        HoraFin,
+                        TiempoPromedioAtencion
+                    FROM 
+                        ProgramacionMedica
+                    WHERE 
+                        IdMedico = @idMedico
+                        AND CONVERT(date, Fecha) = CONVERT(date, @fecha)
+                        AND IdServicio = @idServicio
+                ),
+                -- CTE para obtener las horas ocupadas en la tabla Citas
+                HorasOcupadas AS (
+                    SELECT 
+                        HoraInicio
+                    FROM 
+                        Citas
+                    WHERE 
+                        Fecha = @fecha
+                        AND IdServicio = @idServicio
+                )
+                -- Generamos las horas disponibles dentro de cada intervalo de ProgramacionMedica
+                SELECT 
+                    FORMAT(DATEADD(MINUTE, (N.N - 1) * HP.TiempoPromedioAtencion, HP.HoraInicio), 'HH:mm') AS HoraInicioDisponible,
+                    FORMAT(DATEADD(MINUTE, N.N * HP.TiempoPromedioAtencion, HP.HoraInicio), 'HH:mm') AS HoraFinDisponible
+                FROM 
+                    HorasProgramadas HP
+                CROSS APPLY 
+                    (SELECT 1 AS N UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL SELECT 5 
+                    UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9 UNION ALL SELECT 10) AS N
+                WHERE 
+                    DATEADD(MINUTE, (N.N - 1) * HP.TiempoPromedioAtencion, HP.HoraInicio) < HP.HoraFin
+                    AND NOT EXISTS (
+                        SELECT 1
+                        FROM HorasOcupadas HO
+                        WHERE HO.HoraInicio = DATEADD(MINUTE, (N.N - 1) * HP.TiempoPromedioAtencion, HP.HoraInicio)
+                    )
+                ORDER BY 
+                    HoraInicioDisponible;
             `);
 
     return res.json(resultado.recordset);
@@ -188,15 +337,26 @@ export const registrarCita = async (req, res) => {
     }
 
     // Validar formato de fecha y que no sea una fecha pasada
-    const fechaCita = new Date(fechaIngreso);
     const hoy = new Date();
-    hoy.setHours(0, 0, 0, 0); // Resetear a inicio del día para comparar solo fechas
+    hoy.setHours(0, 0, 0, 0); // resetear a 00:00 hora local
+
+    // Parsear fechaIngreso como fecha local (sin zona horaria UTC)
+    const [año, mesStr, day] = fechaIngreso.split("-").map(Number);
+    const fechaCita = new Date(año, mesStr - 1, day);
 
     if (isNaN(fechaCita.getTime())) {
       await transaction.rollback();
       return res.status(400).json({
         success: false,
         message: "Formato de fecha inválido",
+      });
+    }
+
+    if (fechaCita < hoy) {
+      await transaction.rollback();
+      return res.status(400).json({
+        success: false,
+        message: `No se puede registrar una cita en una fecha pasada (${fechaIngreso}). Solo se permiten citas para hoy o fechas futuras.`,
       });
     }
 
@@ -237,22 +397,22 @@ export const registrarCita = async (req, res) => {
     // 3. Determinar el turno basado en la hora
     let idTurno, horarioInicio, horarioFin;
 
-    if (horaIni >= 8 && horaIni < 12) {
+    if (horaIni >= 7 && horaIni < 13) {
       // Turno de mañana
       idTurno = 36;
-      horarioInicio = "08:00";
-      horarioFin = "12:00";
-    } else if (horaIni >= 14 && horaIni < 18) {
+      horarioInicio = "07:00";
+      horarioFin = "13:00";
+    } else if (horaIni >= 14 && horaIni < 19) {
       // Turno de tarde
       idTurno = 38;
       horarioInicio = "14:00";
-      horarioFin = "18:00";
+      horarioFin = "19:00";
     } else {
       await transaction.rollback();
       return res.status(400).json({
         success: false,
         message:
-          "La hora seleccionada no está dentro de los horarios disponibles (8:00-12:00 o 14:00-18:00)",
+          "La hora seleccionada no está dentro de los horarios disponibles (7:00 - 13:00 o 14:00 - 19:00)",
       });
     }
 
@@ -759,7 +919,7 @@ export const validarPaciente = async (req, res) => {
           TDI.Descripcion as TipoDocumento,
           pa.NroDocumento,
           pa.ApellidoPaterno + ' ' + pa.ApellidoMaterno AS ApellidosPaciente,
-          RTRIM(pa.PrimerNombre + ' ' + ISNULL(PA.SegundoNombre, '') + ' ' + ISNULL(PA.TercerNombre,'')) AS NombrePaciente,
+          UPPER(RTRIM(pa.PrimerNombre + ' ' + ISNULL(PA.SegundoNombre, '') + ' ' + ISNULL(PA.TercerNombre,''))) AS NombrePaciente,
           pa.NroHistoriaClinica,
           PA.FechaNacimiento
         FROM Pacientes PA 
@@ -818,6 +978,8 @@ export const validarPaciente = async (req, res) => {
   }
 };
 
+//--- TRIAJE ---//
+
 // Combinar verificación y obtención de datos de triaje
 export const verificarEstadoTriaje = async (req, res) => {
   try {
@@ -845,7 +1007,8 @@ export const verificarEstadoTriaje = async (req, res) => {
           TriajeFrecRespiratoria AS frecuenciaRespiratoria,
           TriajeFrecCardiaca AS frecuenciaCardiaca,
           TriajeSaturacion AS saturacionOxigeno,
-          TriajePerimAbdominal AS perimetroAbdominal
+          TriajePerimAbdominal AS perimetroAbdominal,
+          TriajePerimCefalico AS perimetroEncefalico
         FROM atencionesCE
         WHERE idAtencion = @idAtencion 
         OR IdAtencion = @idAtencion
@@ -870,15 +1033,11 @@ export const verificarEstadoTriaje = async (req, res) => {
   }
 };
 
-//--- TRIAJE ---//
-
 // Registrar o actualizar triaje
 export const registrarTriaje = async (req, res) => {
   try {
     const { 
-      idAtencion, 
-      paciente,
-      edad,
+      idAtencion,
       presionSistolica, 
       presionDiastolica, 
       talla, 
@@ -889,7 +1048,7 @@ export const registrarTriaje = async (req, res) => {
       frecuenciaCardiaca, 
       saturacionOxigeno, 
       perimetroAbdominal,
-      editMode
+      perimetroEncefalico,
     } = req.body;
     
     // Validar datos mínimos
@@ -944,24 +1103,22 @@ export const registrarTriaje = async (req, res) => {
     if (existeRegistro.recordset.length === 0) {
       // INSERTAR: No existe registro, crear uno nuevo
       await poolExterna.request()
-        .input('idAtencion', sql.Int, idAtencion)
-        .input('nroHistoriaClinica', sql.Int, datosCita.NroHistoriaClinica || null)
-        // .input('citaMedico', sql.Int, datosCita.CitaMedico || null)
-        // .input('citaServicio', sql.Int, datosCita.CitaServicio || null)
-        // .input('citaIdServicio', sql.Int, datosCita.CitaIdServicio || null)
-        .input('triajeEdad', sql.Int, edad || datosCita.Edad || null)
+        .input('idAtencion', sql.Float, idAtencion)
+        .input('nroHistoriaClinica', sql.Float, datosCita.NroHistoriaClinica || null)
+        .input('triajeEdad', sql.Int, datosCita.Edad || null)
         .input('triajePresion', sql.VarChar, presion)
-        .input('triajeTalla', sql.Int, talla || null)
-        .input('triajeTemperatura', sql.Int, temperatura || null)
-        .input('triajePeso', sql.Int, peso || null)
+        .input('triajeTalla', sql.Float, talla || null)
+        .input('triajeTemperatura', sql.Float, temperatura || null)
+        .input('triajePeso', sql.Float, peso || null)
         .input('triajeFecha', sql.Date, fechaActual)
         .input('triajeIdUsuario', sql.Int, idUsuario)
-        .input('triajePulso', sql.Int, pulso || null)
-        .input('triajeFrecRespiratoria', sql.Int, frecuenciaRespiratoria || null)
-        .input('triajeFrecCardiaca', sql.Int, frecuenciaCardiaca || null)
+        .input('triajePulso', sql.Float, pulso || null)
+        .input('triajeFrecRespiratoria', sql.Float, frecuenciaRespiratoria || null)
+        .input('triajeFrecCardiaca', sql.Float, frecuenciaCardiaca || null)
         .input('TriajeOrigen', sql.Int, 1)
-        .input('triajeSaturacion', sql.Int, saturacionOxigeno || null)
-        .input('triajePerimAbdominal', sql.Int, perimetroAbdominal || null)
+        .input('triajeSaturacion', sql.Float, saturacionOxigeno || null)
+        .input('triajePerimAbdominal', sql.Float, perimetroAbdominal || null)
+        .input('triajePerimCefalico', sql.Float, perimetroEncefalico || null)
         .query(`
           INSERT INTO atencionesCE (
             idAtencion, 
@@ -978,7 +1135,8 @@ export const registrarTriaje = async (req, res) => {
             TriajeFrecCardiaca,
             TriajeOrigen,
             TriajeSaturacion,
-            TriajePerimAbdominal
+            TriajePerimAbdominal,
+            TriajePerimCefalico
           )
           VALUES (
             @idAtencion,
@@ -995,7 +1153,8 @@ export const registrarTriaje = async (req, res) => {
             @triajeFrecCardiaca,
             @TriajeOrigen,
             @triajeSaturacion,
-            @triajePerimAbdominal
+            @triajePerimAbdominal,
+            @triajePerimCefalico
           )
         `);
         
@@ -1008,18 +1167,19 @@ export const registrarTriaje = async (req, res) => {
       // ACTUALIZAR: Ya existe un registro, actualizar los campos de triaje
       await poolExterna.request()
         .input('idAtencion', sql.Int, idAtencion)
-        .input('triajeEdad', sql.Int, edad || null)
+        .input('triajeEdad', sql.Int, datosCita.Edad || null)
         .input('triajePresion', sql.VarChar, presion)
-        .input('triajeTalla', sql.Int, talla || null)
-        .input('triajeTemperatura', sql.Int, temperatura || null)
-        .input('triajePeso', sql.Int, peso || null)
+        .input('triajeTalla', sql.Float, talla || null)
+        .input('triajeTemperatura', sql.Float, temperatura || null)
+        .input('triajePeso', sql.Float, peso || null)
         .input('triajeFecha', sql.Date, fechaActual)
         .input('triajeIdUsuario', sql.Int, idUsuario)
-        .input('triajePulso', sql.Int, pulso || null)
-        .input('triajeFrecRespiratoria', sql.Int, frecuenciaRespiratoria || null)
-        .input('triajeFrecCardiaca', sql.Int, frecuenciaCardiaca || null)
-        .input('triajeSaturacion', sql.Int, saturacionOxigeno || null)
-        .input('triajePerimAbdominal', sql.Int, perimetroAbdominal || null)
+        .input('triajePulso', sql.Float, pulso || null)
+        .input('triajeFrecRespiratoria', sql.Float, frecuenciaRespiratoria || null)
+        .input('triajeFrecCardiaca', sql.Float, frecuenciaCardiaca || null)
+        .input('triajeSaturacion', sql.Float, saturacionOxigeno || null)
+        .input('triajePerimAbdominal', sql.Float, perimetroAbdominal || null)
+        .input('triajePerimCefalico', sql.Float, perimetroEncefalico || null)
         .query(`
           UPDATE atencionesCE
           SET 
@@ -1034,7 +1194,8 @@ export const registrarTriaje = async (req, res) => {
             TriajeFrecRespiratoria = @triajeFrecRespiratoria,
             TriajeFrecCardiaca = @triajeFrecCardiaca,
             TriajeSaturacion = @triajeSaturacion,
-            TriajePerimAbdominal = @triajePerimAbdominal
+            TriajePerimAbdominal = @triajePerimAbdominal,
+            TriajePerimCefalico = @triajePerimCefalico
           WHERE idAtencion = @idAtencion
         `);
         

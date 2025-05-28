@@ -1,0 +1,170 @@
+
+-- Buscador de CPT
+DECLARE @Codigo NVARCHAR(100) = '58600';
+DECLARE @Nombre NVARCHAR(300) = '';
+DECLARE @idPuntoCarga INT = 649;
+DECLARE @idTipoFinanciamiento INT = 16;
+
+-- Query principal
+SELECT DISTINCT
+    fcs.IdProducto, 
+    fcs.Codigo, 
+    fcs.Nombre, 
+    fcsh.PrecioUnitario, 
+    fcsh.Activo, 
+    fcsp.idPuntoCarga,
+    fcsh.SeUsaSinPrecio
+FROM 
+    dbo.FactCatalogoServicios AS fcs
+INNER JOIN 
+    dbo.FactCatalogoServiciosPtos AS fcsp ON fcs.IdProducto = fcsp.idProducto
+INNER JOIN 
+    dbo.FactCatalogoServiciosHosp AS fcsh ON fcs.IdProducto = fcsh.IdProducto
+WHERE 
+    fcs.idEstado = 1 AND
+    fcsp.idPuntoCarga = @idPuntoCarga AND
+    fcsh.idTipoFinanciamiento = @idTipoFinanciamiento AND
+    (
+        (@Codigo IS NULL OR @Codigo = '') OR 
+        fcs.Codigo LIKE @Codigo + '%'
+    ) AND
+    (
+        (@Nombre IS NULL OR @Nombre = '') OR 
+        fcs.Nombre LIKE @Nombre + '%'
+    )
+ORDER BY 
+    fcs.Nombre ASC;
+
+--IdProducto	Codigo	Nombre				PrecioUnitario	Activo	idPuntoCarga	SeUsaSinPrecio
+--2339			58600	LIGADURA O SECCI..	0.00			1		649				1
+
+
+-- Obtiene el IdProducto, luego filtrar por ese Id y por el Id 16 (Estrategia)
+exec FactCatalogoServiciosXidTipoFinanciamiento 288,16
+
+-- Se agrega una nueva Orden para el CPT
+exec FactOrdenServicioAgregar 652165,1,101144,272268,149,16,9,'2025-04-30 11:05:00',3752,'2025-04-30 11:05:00',3752,1,'2025-04-30 11:04:00',3752
+
+select * from FactOrdenServicio where IdCuentaAtencion=272268
+
+exec FacturacionServicioDespachoAgregar 652165,288,1,$0.0000,$0.0000,'',0,0,3752,NULL,50506
+
+
+
+select top 3* from FacturacionServicioDespacho where idOrden=652165
+
+select * from FactPuntosCarga where IdPuntoCarga=1
+
+select * from AtencionesDiagnosticos where IdAtencion=272270
+
+---
+
+
+DECLARE @searchTerm VARCHAR(MAX) = 'sida '; 
+
+WITH DiagnosticosCombinados AS (
+    SELECT
+        IdDiagnostico,
+        TRIM(CodigoCIE2004) + ' - ' + TRIM(Descripcion) AS CodigoDescripcion,
+        CodigoCIE2004 AS Codigo,
+        Descripcion
+    FROM Diagnosticos
+)
+SELECT TOP 30
+    IdDiagnostico,
+    CodigoDescripcion AS Diagnostico
+FROM DiagnosticosCombinados
+WHERE
+    @searchTerm = '' OR
+    CodigoDescripcion LIKE '%' + @searchTerm + '%'
+ORDER BY
+    CodigoDescripcion;
+
+---
+
+select * from FacturacionCuentasAtencion where IdCuentaAtencion=131320
+-- Obtener el IdOrden
+
+-- Buscar en la tabla Atenciones
+select * from Atenciones where IdAtencion=131320
+-- Obtener el IdOrden con respecto a la Atención
+select * from FactOrdenServicio where IdCuentaAtencion=131320 -- IdOrden=169365
+select * from FacturacionServicioFinanciamientos where idOrden=169365
+
+-- Interconsulta
+select 
+ase.IdSolicitudEspecialidad,
+(ISNULL(p.PrimerNombre, '')+ ' '+ISNULL(p.ApellidoPaterno,'')+ ' '+ISNULL(p.ApellidoMaterno,'')) as Paciente,
+e.Nombre as NombreEspecialidad,
+ase.motivo,
+d.CodigoCIE2004,
+d.Descripcion,
+(em.Nombres+' '+em.ApellidoPaterno) AS Doctor
+from AtencionesSolicitudEspecialidades ase 
+inner join Diagnosticos d on ase.IdDiagnostico=d.IdDiagnostico
+inner join Atenciones a on ase.IdAtencion=a.IdAtencion
+inner join Pacientes p on a.IdPaciente=p.IdPaciente
+inner join Especialidades e ON ase.IdEspecialidad = e.IdEspecialidad
+inner join Empleados em on ase.IdUsuario=em.IdEmpleado
+where ase.IdAtencion=131320
+
+-- CPT
+select * from FactOrdenServicio where IdCuentaAtencion=131320
+
+select * from FacturacionServicioDespacho where idOrden=169365
+
+select top 3 * from farmInventarioCabecera
+select top 3* from farmInventarioDetalle
+
+select top 3* from FacturacionServicioFinanciamientos where idOrden=169365
+
+select top 3* from FactCatalogoServicios
+
+select * from FactCatalogoServiciosPtos where idPuntoCarga in (645, 649, 730, 812, 846, 847, 858, 867, 907)
+
+select * from FactPuntosCarga where idServicio IN (145, 149, 230, 312, 346, 347, 358, 367, 407, 439)
+-- Los puntos de carga se suma 500 al IdServicio
+
+
+-- Buscador de CPT
+DECLARE @Codigo NVARCHAR(100) = '';
+DECLARE @Nombre NVARCHAR(300) = '';
+DECLARE @idPuntoCarga INT = 649;
+DECLARE @idTipoFinanciamiento INT = 16;
+
+-- Query principal
+SELECT DISTINCT
+    fcs.IdProducto, 
+    fcs.Codigo, 
+    fcs.Nombre, 
+    fcsh.PrecioUnitario, 
+    fcsh.Activo, 
+    fcsp.idPuntoCarga,
+    fcsh.SeUsaSinPrecio
+FROM 
+    dbo.FactCatalogoServicios AS fcs
+INNER JOIN 
+    dbo.FactCatalogoServiciosPtos AS fcsp ON fcs.IdProducto = fcsp.idProducto
+INNER JOIN 
+    dbo.FactCatalogoServiciosHosp AS fcsh ON fcs.IdProducto = fcsh.IdProducto
+WHERE 
+    fcs.idEstado = 1 AND
+    fcsp.idPuntoCarga = @idPuntoCarga AND
+    fcsh.idTipoFinanciamiento = @idTipoFinanciamiento AND
+    (
+        (@Codigo IS NULL OR @Codigo = '') OR 
+        fcs.Codigo LIKE @Codigo + '%'
+    ) AND
+    (
+        (@Nombre IS NULL OR @Nombre = '') OR 
+        fcs.Nombre LIKE @Nombre + '%'
+    )
+ORDER BY 
+    fcs.Nombre ASC;
+
+
+
+select * from FacturacionCuentasAtencion where IdCuentaAtencion>=272264
+
+LLAMAR 
+935884338 ELias Jimenez

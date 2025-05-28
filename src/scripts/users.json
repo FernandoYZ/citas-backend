@@ -1,0 +1,356 @@
+{
+  "users": [
+    {
+      "username": "administrator",
+      "password": "08979310"
+    },
+    {
+      "username": "KAGUILAR",
+      "password": "70146798"
+    },
+    {
+      "username": "LAGUIRREB",
+      "password": "21447265"
+    },
+    {
+      "username": "LAGUIRRE",
+      "password": "20037896"
+    },
+    {
+      "username": "EAGUIRRE",
+      "password": "44837015"
+    },
+    {
+      "username": "MALDANA",
+      "password": "42785701"
+    },
+    {
+      "username": "PALMEYDA",
+      "password": "71882004"
+    },
+    {
+      "username": "SARANIBAR",
+      "password": "46810393"
+    },
+    {
+      "username": "JAREVALO",
+      "password": "09444214"
+    },
+    {
+      "username": "MARIAS",
+      "password": "47562334"
+    },
+    {
+      "username": "AARPASI",
+      "password": "02449505"
+    },
+    {
+      "username": "BARPASI",
+      "password": "41042999"
+    },
+    {
+      "username": "PARRIAGA",
+      "password": "44394553"
+    },
+    {
+      "username": "HASPUR",
+      "password": "41549337"
+    },
+    {
+      "username": "EAZAMBUJA",
+      "password": "72192824"
+    },
+    {
+      "username": "JBARBOZA",
+      "password": "46141631"
+    },
+    {
+      "username": "MBORJAS",
+      "password": "22300855"
+    },
+    {
+      "username": "ACARDENAS",
+      "password": "28315200"
+    },
+    {
+      "username": "JCASTILLO",
+      "password": "15436682"
+    },
+    {
+      "username": "CCESPEDES",
+      "password": "40618081"
+    },
+    {
+      "username": "JCESPEDES",
+      "password": "43697196"
+    },
+    {
+      "username": "RCHOQUE",
+      "password": "42074817"
+    },
+    {
+      "username": "MCONCHA",
+      "password": "44379526"
+    },
+    {
+      "username": "MRCONTRERAS",
+      "password": "15356695"
+    },
+    {
+      "username": "JCUENTAS",
+      "password": "07445834"
+    },
+    {
+      "username": "CDAVILA",
+      "password": "43597582"
+    },
+    {
+      "username": "DELACRUZG",
+      "password": "15358726"
+    },
+    {
+      "username": "ADIAZ",
+      "password": "08055051"
+    },
+    {
+      "username": "OESCATE",
+      "password": "45072978"
+    },
+    {
+      "username": "SESPINOZA",
+      "password": "17814882"
+    },
+    {
+      "username": "VEUSEBIO",
+      "password": "21853903"
+    },
+    {
+      "username": "maribel",
+      "password": "70782668"
+    },
+    {
+      "username": "MFLORES",
+      "password": "46286685"
+    },
+    {
+      "username": "MGALINDO",
+      "password": "41512695"
+    },
+    {
+      "username": "YGALVAN",
+      "password": "44196219"
+    },
+    {
+      "username": "SILVIA",
+      "password": "46099183"
+    },
+    {
+      "username": "JGETSEMANI",
+      "password": "09277569"
+    },
+    {
+      "username": "AGOMERO",
+      "password": "07263319"
+    },
+    {
+      "username": "GGOMEZ",
+      "password": "72047896"
+    },
+    {
+      "username": "PGOMEZ",
+      "password": "21520394"
+    },
+    {
+      "username": "MGONZALES",
+      "password": "43686851"
+    },
+    {
+      "username": "AHERBOZO",
+      "password": "15726282"
+    },
+    {
+      "username": "AHERRERA",
+      "password": "21538712"
+    },
+    {
+      "username": "AHILAZACA",
+      "password": "40259431"
+    },
+    {
+      "username": "WHUAMANI",
+      "password": "21533446"
+    },
+    {
+      "username": "SHUANCA",
+      "password": "70041103"
+    },
+    {
+      "username": "GHUAPAYA",
+      "password": "45513792"
+    },
+    {
+      "username": "JHUARANGA",
+      "password": "70280463"
+    },
+    {
+      "username": "CHUARAZ",
+      "password": "40580664"
+    },
+    {
+      "username": "EHUAROTO",
+      "password": "41855751"
+    },
+    {
+      "username": "HHUAYANCA",
+      "password": "21534718"
+    },
+    {
+      "username": "RISRAEL",
+      "password": "06355098"
+    },
+    {
+      "username": "AJAUREGUI",
+      "password": "44385803"
+    },
+    {
+      "username": "MJULCA",
+      "password": "47506602"
+    },
+    {
+      "username": "PLAGUNA",
+      "password": "45833211"
+    },
+    {
+      "username": "MLARA",
+      "password": "74232598"
+    },
+    {
+      "username": "HLAREDO",
+      "password": "46437202"
+    },
+    {
+      "username": "ELEON",
+      "password": "07628818"
+    },
+    {
+      "username": "WLINARES",
+      "password": "46762324"
+    },
+    {
+      "username": "CLLANCACHAGUA",
+      "password": "41368388"
+    },
+    {
+      "username": "JLUYO",
+      "password": "15450811"
+    },
+    {
+      "username": "TMARTINEZ",
+      "password": "43110192"
+    },
+    {
+      "username": "AMENDOZA",
+      "password": "42733345"
+    },
+    {
+      "username": "CMENDOZA",
+      "password": "72500488"
+    },
+    {
+      "username": "JMOLINA",
+      "password": "21448256"
+    },
+    {
+      "username": "RMORON",
+      "password": "22185710"
+    },
+    {
+      "username": "MNOLASCO",
+      "password": "09848426"
+    },
+    {
+      "username": "RNOLASCO",
+      "password": "09839522"
+    },
+    {
+      "username": "EORELLANA",
+      "password": "70079555"
+    },
+    {
+      "username": "JORREGO",
+      "password": "07556895"
+    },
+    {
+      "username": "VPACHAS",
+      "password": "48301441"
+    },
+    {
+      "username": "MPACHAS",
+      "password": "21790997"
+    },
+    {
+      "username": "SPACHECO",
+      "password": "29278268"
+    },
+    {
+      "username": "OPERALTA",
+      "password": "17453009"
+    },
+    {
+      "username": "APORTUGUEZ",
+      "password": "21403131"
+    },
+    {
+      "username": "MRODRIGUEZ",
+      "password": "21534982"
+    },
+    {
+      "username": "PRUIZ",
+      "password": "44607338"
+    },
+    {
+      "username": "asanchez",
+      "password": "77288887"
+    },
+    {
+      "username": "MSUAREZ",
+      "password": "08888873"
+    },
+    {
+      "username": "JTAMAYO",
+      "password": "29607506"
+    },
+    {
+      "username": "LTENORIO",
+      "password": "45376528"
+    },
+    {
+      "username": "PTORIBIO",
+      "password": "43889124"
+    },
+    {
+      "username": "HTORRES",
+      "password": "41822075"
+    },
+    {
+      "username": "JURIBE",
+      "password": "21535499"
+    },
+    {
+      "username": "RVARGAS",
+      "password": "21560217"
+    },
+    {
+      "username": "TVARGAS",
+      "password": "06725814"
+    },
+    {
+      "username": "BVASQUEZ",
+      "password": "21547463"
+    },
+    {
+      "username": "RVEGA",
+      "password": "43612120"
+    }
+  ]
+}

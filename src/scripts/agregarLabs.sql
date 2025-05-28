@@ -1,14 +1,47 @@
--- Agregar columnas LabConfHIS2 y LabConfHIS3 a la tabla AtencionesDiagnosticos
+-- AtencionesDiagnosticos
 ALTER TABLE AtencionesDiagnosticos  
 ADD LabConfHIS2 CHAR(3) NULL,  
     LabConfHIS3 CHAR(3) NULL;
 
+-- FacturacionServicioDespacho
 ALTER TABLE FacturacionServicioDespacho  
 ADD LabConfHIS2 CHAR(3) NULL,  
-    LabConfHIS3 CHAR(3) NULL;
+    LabConfHIS3 CHAR(3) NULL,
+    PDR CHAR(3) NULL;
 
-alter TABLE Empleados
-add contrasenia VARCHAR(255) NULL;
+-- control de contraseñas
+
+ALTER TABLE Empleados ADD Password VARCHAR(100);
+UPDATE Empleados SET Password = REPLACE(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(DNI)), ' ', ''),CHAR(9), ''),CHAR(10), ''),CHAR(13), '');
+
+---
+
+SELECT IdMedico,IdServicio FROM ProgramacionMedica where Fecha='20250526' and IdServicio=146
+
+select top 100 Usuario, LTRIM(RTRIM(DNI)) as dni from Empleados
+
+
+SELECT DISTINCT LTRIM(RTRIM(NroDocumento)) AS NroDocumento
+FROM Pacientes
+WHERE NroDocumento IS NOT NULL
+  AND LTRIM(RTRIM(NroDocumento)) <> ''
+  AND LEN(LTRIM(RTRIM(NroDocumento))) >= 8
+
+
+select * from Servicios where Nombre like '%est. control de tb - ce.%'
+
+SELECT 
+  ur.IdUsuarioRol,
+  e.IdEmpleado ,e.ApellidoPaterno+ ' ' + e.ApellidoMaterno + ' ' + e.Nombres AS Empleado,
+  r.idrol,
+  r.nombre AS NombreRol
+FROM UsuariosRoles ur
+JOIN Empleados e ON ur.idempleado = e.IdEmpleado
+JOIN Roles r ON ur.idrol = r.idrol
+
+SELECT Usuario, DNI, Password FROM Empleados where Usuario = 'YESPINO'
+
+
 
 select * from FactCatalogoServicios where Codigo like '%D7410%'
 
@@ -16,6 +49,7 @@ select top 10 * from FacturacionServicioDespacho order by idOrden desc
 
     ALTER TABLE AtencionesDiagnosticos
 ALTER COLUMN LabConfHIS2 CHAR(3) NULL;
+
 
 ALTER TABLE AtencionesDiagnosticos
 ALTER COLUMN LabConfHIS3 CHAR(3) NULL;

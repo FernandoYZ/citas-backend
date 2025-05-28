@@ -19,7 +19,7 @@ const dbConfigExterna = {
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   server: process.env.DB_SERVER,
-  database: process.env.DB_DATABASE2, // Nombre específico para la base externa
+  database: process.env.DB_DATABASE2, 
   options: {
     encrypt: false,
     trustServerCertificate: false,

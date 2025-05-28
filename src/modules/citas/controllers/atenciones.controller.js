@@ -1,169 +1,8 @@
-// atenciones.controller.js
-import { Conexion, ConexionExterna } from "../../config/database.js";
+// src/modules/atenciones/atenciones.controller.js
+import { Conexion, ConexionExterna } from "../../../config/database.js";
 import sql from "mssql";
 
 const pol = await Conexion();
-
-export const obtenerDiagnosticos = async (req, res) => {
-  try {
-    const { IdAtencion } = req.query;
-    const result = await pol.request().input("IdAtencion", sql.Int, IdAtencion)
-      .query(`
-                select * from AtencionesDiagnosticos where IdAtencion=@IdAtencion
-            `);
-    return res.json(result.recordset);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      mensaje: "Error al obtener los datos",
-      error: error.mensaje,
-    });
-  }
-};
-
-export const registrarAtencionesDiagnosticos = async (req, res) => {
-  try {
-    const {
-      IdSubclasificacionDx,
-      IdClasificacionDx,
-      IdDiagnostico,
-      IdAtencion,
-      labConfHIS = null,
-      grupoHIS = 0,
-      subGrupoHIS = 0,
-      IdUsuarioAuditoria,
-      labConfHIS2 = null,
-      labConfHIS3 = null,
-      idordenDx = null,
-      NroEvaluacion = null,
-    } = req.body;
-
-    const result = await pol
-      .request()
-      .input("IdSubclasificacionDx", sql.Int, IdSubclasificacionDx)
-      .input("IdClasificacionDx", sql.Int, IdClasificacionDx)
-      .input("IdDiagnostico", sql.Int, IdDiagnostico)
-      .input("IdAtencion", sql.Int, IdAtencion)
-      .input("labConfHIS", sql.VarChar(3), labConfHIS)
-      .input("grupoHIS", sql.Int, grupoHIS)
-      .input("subGrupoHIS", sql.Int, subGrupoHIS)
-      .input("labConfHIS2", sql.VarChar(3), labConfHIS2)
-      .input("labConfHIS3", sql.VarChar(3), labConfHIS3)
-      .input("idordenDx", sql.Int, idordenDx)
-      .input("IdUsuarioAuditoria", sql.Int, IdUsuarioAuditoria)
-      .input("NroEvaluacion", sql.Int, NroEvaluacion).query(`
-                INSERT INTO AtencionesDiagnosticos (
-                    IdSubclasificacionDx,
-                    IdClasificacionDx,
-                    IdDiagnostico,
-                    IdAtencion,
-                    labConfHIS,
-                    grupoHIS,
-                    subGrupoHIS,
-                    labConfHIS2,
-                    labConfHIS3,
-                    idordenDx,
-                    IdUsuarioAuditoria
-                    ,NroEvaluacion
-                )
-                VALUES (
-                    @IdSubclasificacionDx,
-                    @IdClasificacionDx,
-                    @IdDiagnostico,
-                    @IdAtencion,
-                    @labConfHIS,
-                    @grupoHIS,
-                    @subGrupoHIS,
-                    @labConfHIS2,
-                    @labConfHIS3,
-                    @idordenDx,
-                    @IdUsuarioAuditoria
-                    ,@NroEvaluacion
-                );
-
-                SELECT SCOPE_IDENTITY() AS IdAtencionDiagnostico;
-            `);
-
-    res.json({
-      success: true,
-      mensaje: "Diagnóstico registrado correctamente",
-      IdAtencionDiagnostico: result.recordset[0].IdAtencionDiagnostico,
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      success: false,
-      mensaje: "Error al registrar AtencionesDiagnosticos",
-      error: error.message,
-    });
-  }
-};
-
-export const actualizarAtencionesDiagnosticos = async (req, res) => {
-  try {
-    const {
-      IdAtencionDiagnostico,
-      IdSubclasificacionDx,
-      IdClasificacionDx,
-      IdDiagnostico,
-      IdAtencion,
-      grupoHIS = 0,
-      subGrupoHIS = 0,
-      IdUsuarioAuditoria,
-      idordenDx = null,
-      labConfHIS = null,
-      labConfHIS2 = null,
-      labConfHIS3 = null,
-      NroEvaluacion = null,
-    } = req.body;
-
-    // Ejecuta la actualización
-    await pol
-      .request()
-      .input("IdAtencionDiagnostico", sql.Int, IdAtencionDiagnostico)
-      .input("IdSubclasificacionDx", sql.Int, IdSubclasificacionDx)
-      .input("IdClasificacionDx", sql.Int, IdClasificacionDx)
-      .input("IdDiagnostico", sql.Int, IdDiagnostico)
-      .input("IdAtencion", sql.Int, IdAtencion)
-      .input("grupoHIS", sql.Int, grupoHIS)
-      .input("subGrupoHIS", sql.Int, subGrupoHIS)
-      .input("idordenDx", sql.Int, idordenDx)
-      .input("labConfHIS", sql.VarChar(3), labConfHIS)
-      .input("labConfHIS2", sql.VarChar(3), labConfHIS2)
-      .input("labConfHIS3", sql.VarChar(3), labConfHIS3)
-      .input("NroEvaluacion", sql.Int, NroEvaluacion)
-      .input("IdUsuarioAuditoria", sql.Int, IdUsuarioAuditoria).query(`
-                UPDATE AtencionesDiagnosticos
-                SET
-                    IdSubclasificacionDx = @IdSubclasificacionDx,
-                    IdClasificacionDx = @IdClasificacionDx,
-                    IdDiagnostico = @IdDiagnostico,
-                    IdAtencion = @IdAtencion,
-                    grupoHIS = @grupoHIS,
-                    subGrupoHIS = @subGrupoHIS,
-                    idordenDx = @idordenDx,
-                    labConfHIS = @labConfHIS,
-                    labConfHIS2 = @labConfHIS2,
-                    labConfHIS3 = @labConfHIS3,
-                    NroEvaluacion = @NroEvaluacion
-                WHERE IdAtencionDiagnostico = @IdAtencionDiagnostico;
-
-                EXEC AuditoriaAgregar @IdUsuarioAuditoria, 'M', @IdAtencionDiagnostico, 'AtencionesDiagnosticos';
-            `);
-
-    res.json({
-      success: true,
-      mensaje: "Diagnóstico actualizado correctamente",
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      success: false,
-      mensaje: "Error al actualizar AtencionesDiagnosticos",
-      error: error.message,
-    });
-  }
-};
 
 // Eliminar diagnóstico
 export const eliminarAtencionesDiagnostico = async (req, res) => {
@@ -180,14 +19,13 @@ export const eliminarAtencionesDiagnostico = async (req, res) => {
     const idUsuario = req.usuario?.id;
 
     // Obtener datos de Trabajor
-    const Empleado = await pol.request()
-      .input('IdUsuario', sql.Int, idUsuario)
+    const Empleado = await pol.request().input("IdUsuario", sql.Int, idUsuario)
       .query(`
         SELECT 
         UPPER(LTRIM(RTRIM(Nombres+' '+ApellidoPaterno+ ' '+ISNULL(ApellidoMaterno,'')))) AS Usuario
         FROM Empleados WHERE IdEmpleado = 3752
       `);
-    const Usuario = Empleado.recordset[0]?.Usuario || 'API';
+    const Usuario = Empleado.recordset[0]?.Usuario || "API";
 
     const IdAtencionDiagnostico = parseInt(req.params.id);
 
@@ -197,13 +35,12 @@ export const eliminarAtencionesDiagnostico = async (req, res) => {
         mensaje: "Se requiere el ID del diagnóstico",
       });
     }
-    
+
     await pol
       .request()
       .input("IdAtencionDiagnostico", sql.Int, IdAtencionDiagnostico)
       .input("IdUsuarioAuditoria", sql.Int, idUsuario || 357)
-      .input("Usuario", sql.VarChar(50), Usuario)
-      .query(`
+      .input("Usuario", sql.VarChar(50), Usuario).query(`
         DELETE FROM AtencionesDiagnosticos 
         WHERE IdAtencionDiagnostico = @IdAtencionDiagnostico;
 
@@ -227,34 +64,37 @@ export const eliminarAtencionesDiagnostico = async (req, res) => {
 // Buscar diagnósticos por código CIE
 export const buscarDiagnosticos = async (req, res) => {
   try {
-    const { codigo = "", descripcion = "" } = req.query;
+    const { input = "", limit = 30 } = req.query;
+    const limitNum = parseInt(limit, 10) || 30;
 
-    const result = await pol
+    const request = await pol
       .request()
-      .input("Codigo", sql.VarChar, codigo)
-      .input("Descripcion", sql.VarChar, descripcion).query(`
-                SELECT TOP 50 
+      .input("searchTerm", sql.VarChar(sql.MAX), input).query(`
+      WITH DiagnosticosCombinados AS (
+    SELECT
+        IdDiagnostico,
+        LTRIM(RTRIM(CodigoCIE2004)) + ' - ' + LTRIM(RTRIM(Descripcion)) AS CodigoDescripcion,
+        CodigoCIE2004 AS Codigo,
+        Descripcion
+    FROM Diagnosticos
+)
+SELECT TOP ${limitNum}
     IdDiagnostico,
-    LTRIM(RTRIM(REPLACE(REPLACE(CodigoCIE2004, CHAR(9), ''), CHAR(160), ''))) AS Codigo,
-    LTRIM(RTRIM(REPLACE(REPLACE(Descripcion, CHAR(9), ''), CHAR(160), ''))) AS Descripcion
-FROM Diagnosticos
-WHERE 
-    (@Codigo = '' OR CodigoCIE2004 LIKE '%' + @Codigo + '%')
-    AND (@Descripcion = '' OR Descripcion LIKE '%' + @Descripcion + '%')
-ORDER BY 
-    CASE 
-        WHEN CodigoCIE2004 LIKE @Codigo + '%' THEN 0
-        ELSE 1
-    END,
-    CodigoCIE2004;
-            `);
+    CodigoDescripcion AS Diagnostico
+FROM DiagnosticosCombinados
+WHERE
+    @searchTerm = '' OR
+    CodigoDescripcion LIKE '%' + @searchTerm + '%'
+ORDER BY
+    CodigoDescripcion ASC;
+    `);
 
-    return res.json(result.recordset);
+    return res.json(request.recordset);
   } catch (error) {
-    console.error(error);
+    console.error("getDiagnosticosList: Error al buscar:", error);
     res.status(500).json({
       success: false,
-      mensaje: "Error al buscar diagnósticos",
+      mensaje: "getDiagnosticosList: Error al buscar diagnósticos",
       error: error.message,
     });
   }
@@ -286,40 +126,39 @@ export const selectCondicionMaterna = async (req, res) => {
   try {
     const { IdPaciente } = req.query;
 
-    const result = await pol.request()
-      .input('IdPaciente', sql.Int, IdPaciente)
+    const result = await pol
+      .request()
+      .input("IdPaciente", sql.Int, IdPaciente)
       .query(`SELECT IdTipoSexo FROM Pacientes WHERE IdPaciente = @IdPaciente`);
 
     const sexoPaciente = result.recordset[0]?.IdTipoSexo;
 
     let opciones = [];
 
-    if (sexoPaciente === 2) { // Mujer
+    if (sexoPaciente === 2) {
+      // Mujer
       opciones = [
-        { id: 1, label: 'Gestante' },
-        { id: 2, label: 'Puerpera' },
-        { id: 3, label: 'Ninguna' }
+        { id: 1, label: "Gestante" },
+        { id: 2, label: "Puerpera" },
+        { id: 3, label: "Ninguna" },
       ];
     } else {
-      opciones = [
-        { id: 3, label: 'Ninguna' }
-      ];
+      opciones = [{ id: 3, label: "Ninguna" }];
     }
 
     res.status(200).json({
       success: true,
-      data: opciones
+      data: opciones,
     });
-
   } catch (error) {
-    console.error(error)
+    console.error(error);
     res.status(500).json({
       success: false,
       message: "Error al obtener condición materna",
-      error: error.message
-    })    
+      error: error.message,
+    });
   }
-}
+};
 
 // Obtener datos de consulta
 export const obtenerDatosConsulta = async (req, res) => {
@@ -335,6 +174,7 @@ export const obtenerDatosConsulta = async (req, res) => {
 
     // Obtener la conexión a la BD externa
     const poolExterna = await ConexionExterna();
+    const pool = await Conexion();
 
     // Consultar datos de la consulta
     const resultConsulta = await poolExterna
@@ -351,8 +191,44 @@ export const obtenerDatosConsulta = async (req, res) => {
                 WHERE idAtencion = @idAtencion
             `);
 
+    // Obtener el idPaciente desde la tabla Citas
+    const pacienteResult = await pool
+      .request()
+      .input("IdAtencion", sql.Int, IdAtencion).query(`
+        SELECT IdPaciente
+        FROM Citas 
+        WHERE IdAtencion = @IdAtencion
+      `);
+
+    let idPaciente = null;
+    if (pacienteResult.recordset.length > 0) {
+      idPaciente = pacienteResult.recordset[0].IdPaciente;
+    }
+
+    // Consultar antecedentes adicionales del paciente si tenemos idPaciente
+    let antecedentesAdicionales = {};
+    if (idPaciente) {
+      const resultAntecedentes = await pool
+        .request()
+        .input("idPaciente", sql.Int, idPaciente).query(`
+          SELECT 
+            antecedentes,
+            antecedAlergico,
+            antecedObstetrico,
+            antecedQuirurgico,
+            antecedFamiliar,
+            antecedPatologico
+          FROM PacientesDatosAdicionales 
+          WHERE idPaciente = @idPaciente
+        `);
+
+      if (resultAntecedentes.recordset.length > 0) {
+        antecedentesAdicionales = resultAntecedentes.recordset[0];
+      }
+    }
+
     // Consultar diagnósticos
-    const resultDiagnosticos = await pol
+    const resultDiagnosticos = await pool
       .request()
       .input("IdAtencion", sql.Int, IdAtencion).query(`
                 SELECT 
@@ -377,9 +253,11 @@ export const obtenerDatosConsulta = async (req, res) => {
         ? resultConsulta.recordset[0]
         : { idAtencion: IdAtencion };
 
+    // IMPORTANTE: Combinar los datos de antecedentes
     return res.json({
       success: true,
       consulta: datosConsulta,
+      antecedentes: antecedentesAdicionales, // Añadimos los antecedentes adicionales como un objeto separado
       diagnosticos: resultDiagnosticos.recordset,
     });
   } catch (error) {
@@ -409,14 +287,13 @@ export const registrarAtencionCE = async (req, res) => {
     const idUsuario = req.usuario?.id;
 
     // Obtener datos de Trabajor
-    const Empleado = await pol.request()
-      .input('IdUsuario', sql.Int, idUsuario)
+    const Empleado = await pol.request().input("IdUsuario", sql.Int, idUsuario)
       .query(`
         SELECT 
         UPPER(LTRIM(RTRIM(Nombres+' '+ApellidoPaterno+ ' '+ISNULL(ApellidoMaterno,'')))) AS Usuario
         FROM Empleados WHERE IdEmpleado = 3752
       `);
-    const Usuario = Empleado.recordset[0]?.Usuario || 'API';
+    const Usuario = Empleado.recordset[0]?.Usuario || "API";
 
     const {
       idAtencion,
@@ -481,20 +358,19 @@ export const registrarAtencionCE = async (req, res) => {
     const idCita = atencionActual.IdCita;
 
     // 1.5. Validar el sexo del paciente - mejor usar un select/checkbox
-    
-    let idCondicionMaterna = 3
+
+    let idCondicionMaterna = 3;
 
     const idSexoPacienteResult = await transaction
       .request()
-      .input('IdPaciente', sql.Int, idPaciente)
+      .input("IdPaciente", sql.Int, idPaciente)
       .query(`SELECT IdTipoSexo FROM Pacientes WHERE IdPaciente = @IdPaciente`);
-  
+
     const sexoPaciente = idSexoPacienteResult.recordset[0]?.IdTipoSexo;
-    
+
     if (sexoPaciente === 2) {
       idCondicionMaterna = 3;
     }
-    
 
     // 2. Actualizar tabla Atenciones
     await transaction
@@ -507,7 +383,7 @@ export const registrarAtencionCE = async (req, res) => {
       .input("FyHInicioI", sql.DateTime, fechaActual)
       .input("FyHFinal", sql.DateTime, fechaActual)
       .input("idCondicionMaterna", sql.Int, idCondicionMaterna)
-      .input("idEstadoAtencion", sql.Int, 2) // Atendido
+      .input("idEstadoAtencion", sql.Int, 1) // Atendido
       .query(`
         UPDATE Atenciones SET
           IdDestinoAtencion = @IdDestinoAtencion,
@@ -525,7 +401,7 @@ export const registrarAtencionCE = async (req, res) => {
     await transaction
       .request()
       .input("IdCita", sql.Int, idCita)
-      .input("IdEstadoCita", sql.Int, 2) // Atendido
+      .input("IdEstadoCita", sql.Int, 1)
       .input("IdEmpleado", sql.Int, idUsuario)
       .input("Accion", sql.Char(1), "M")
       .input("IdRegistro", sql.Int, idCita)
@@ -605,12 +481,12 @@ export const registrarAtencionCE = async (req, res) => {
         .input("antecedentes", sql.VarChar(500), antecedentes || null).query(`
           UPDATE PacientesDatosAdicionales
           SET 
-            antecedQuirurgico = ISNULL(@antecedQuirurgico, antecedQuirurgico),
-            antecedPatologico = ISNULL(@antecedPatologico, antecedPatologico),
-            antecedObstetrico = ISNULL(@antecedObstetrico, antecedObstetrico),
-            antecedAlergico = ISNULL(@antecedAlergico, antecedAlergico),
-            antecedFamiliar = ISNULL(@antecedFamiliar, antecedFamiliar),
-            antecedentes = ISNULL(@antecedentes, antecedentes)
+            antecedQuirurgico = @antecedQuirurgico,
+            antecedPatologico = @antecedPatologico,
+            antecedObstetrico = @antecedObstetrico,
+            antecedAlergico = @antecedAlergico,
+            antecedFamiliar = @antecedFamiliar,
+            antecedentes = @antecedentes
           WHERE idPaciente = @idPaciente
         `);
     } else {
@@ -715,6 +591,32 @@ export const registrarAtencionCE = async (req, res) => {
         WHERE idAtencion = @idAtencion
       `);
 
+    // 6.2.1 Verificar los datos del triaje:
+    const triajeResult = await poolExterna
+      .request()
+      .input("idAtencion", sql.Int, idAtencion).query(`
+        SELECT 
+          TriajeEdad,
+          TriajePresion,
+          TriajeTalla,
+          TriajeTemperatura,
+          TriajePeso,
+          TriajeFecha,
+          TriajeIdUsuario,
+          TriajePulso,
+          TriajeFrecRespiratoria,
+          TriajePerimCefalico,
+          TriajeFrecCardiaca,
+          TriajeOrigen,
+          Triajelatido,
+          TriajeObservacion,
+          TriajeCanal,
+          TriajeSaturacion,
+          TriajePerimAbdominal
+          FROM atencionesCE where idAtencion=@idAtencion  
+      `);
+    const datosTriaje = triajeResult.recordset[0] || {};
+
     // 6.3 Actualizar o insertar en atencionesCE
     const registroCEExiste =
       existeRegistroCE.recordset && existeRegistroCE.recordset.length > 0;
@@ -746,25 +648,49 @@ export const registrarAtencionCE = async (req, res) => {
         .input("CitaObservaciones", sql.VarChar(1000), observaciones || null)
         .input("CitaFechaAtencion", sql.DateTime, fechaActual)
         .input("CitaIdUsuario", sql.Int, idUsuario)
+        .input("TriajeEdad", sql.VarChar(6), datosTriaje.TriajeEdad || null)
         .input(
-          "TriajeEdad",
-          sql.VarChar(6),
-          datosPaciente.TriajeEdad?.toString() || null
+          "TriajePresion",
+          sql.VarChar(13),
+          datosTriaje.TriajePresion || null
         )
-        .input("TriajePresion", sql.VarChar(13), null)
-        .input("TriajeTalla", sql.VarChar(7), null)
-        .input("TriajeTemperatura", sql.VarChar(6), null)
-        .input("TriajePeso", sql.VarChar(7), null)
-        .input("TriajeFecha", sql.DateTime, null)
-        .input("TriajeIdUsuario", sql.Int, null)
-        .input("TriajePulso", sql.Int, null)
-        .input("TriajeFrecRespiratoria", sql.Int, null)
+        .input("TriajeTalla", sql.VarChar(7), datosTriaje.TriajeTalla || null)
+        .input(
+          "TriajeTemperatura",
+          sql.VarChar(6),
+          datosTriaje.TriajeTemperatura || null
+        )
+        .input("TriajePeso", sql.VarChar(7), datosTriaje.TriajePeso || null)
+        .input("TriajeFecha", sql.DateTime, datosTriaje.TriajeFecha || null)
+        .input("TriajeIdUsuario", sql.Int, datosTriaje.TriajeIdUsuario || null)
+        .input("TriajePulso", sql.Int, datosTriaje.TriajePulso || null)
+        .input(
+          "TriajeFrecRespiratoria",
+          sql.Int,
+          datosTriaje.TriajeFrecRespiratoria || null
+        )
         .input("CitaAntecedente", sql.VarChar(1000), antecedentes || null)
-        .input("TriajePerimCefalico", sql.Money, null)
-        .input("TriajeFrecCardiaca", sql.Int, null)
+        .input(
+          "TriajePerimCefalico",
+          sql.Money,
+          datosTriaje.TriajePerimCefalico || null
+        )
+        .input(
+          "TriajeFrecCardiaca",
+          sql.Int,
+          datosTriaje.TriajeFrecCardiaca || null
+        )
         .input("TriajeOrigen", sql.Int, 1)
-        .input("TriajeSaturacion", sql.Int, null)
-        .input("TriajePerimAbdominal", sql.Money, null)
+        .input(
+          "TriajeSaturacion",
+          sql.Int,
+          datosTriaje.TriajeSaturacion || null
+        )
+        .input(
+          "TriajePerimAbdominal",
+          sql.Money,
+          datosTriaje.TriajePerimAbdominal || null
+        )
         .input("IdUsuarioAuditoria", sql.Int, idUsuario)
         .execute("usp_update_atencionesCEModificar_20230926");
     } else {
@@ -794,25 +720,49 @@ export const registrarAtencionCE = async (req, res) => {
         .input("CitaObservaciones", sql.VarChar(1000), observaciones || null)
         .input("CitaFechaAtencion", sql.DateTime, fechaActual)
         .input("CitaIdUsuario", sql.Int, idUsuario)
+        .input("TriajeEdad", sql.VarChar(6), datosTriaje.TriajeEdad || null)
         .input(
-          "TriajeEdad",
-          sql.VarChar(6),
-          datosPaciente.TriajeEdad?.toString() || null
+          "TriajePresion",
+          sql.VarChar(13),
+          datosTriaje.TriajePresion || null
         )
-        .input("TriajePresion", sql.VarChar(13), null)
-        .input("TriajeTalla", sql.VarChar(7), null)
-        .input("TriajeTemperatura", sql.VarChar(6), null)
-        .input("TriajePeso", sql.VarChar(7), null)
-        .input("TriajeFecha", sql.DateTime, null)
-        .input("TriajeIdUsuario", sql.Int, null)
-        .input("TriajePulso", sql.Int, null)
-        .input("TriajeFrecRespiratoria", sql.Int, null)
+        .input("TriajeTalla", sql.VarChar(7), datosTriaje.TriajeTalla || null)
+        .input(
+          "TriajeTemperatura",
+          sql.VarChar(6),
+          datosTriaje.TriajeTemperatura || null
+        )
+        .input("TriajePeso", sql.VarChar(7), datosTriaje.TriajePeso || null)
+        .input("TriajeFecha", sql.DateTime, datosTriaje.TriajeFecha || null)
+        .input("TriajeIdUsuario", sql.Int, datosTriaje.TriajeIdUsuario || null)
+        .input("TriajePulso", sql.Int, datosTriaje.TriajePulso || null)
+        .input(
+          "TriajeFrecRespiratoria",
+          sql.Int,
+          datosTriaje.TriajeFrecRespiratoria || null
+        )
         .input("CitaAntecedente", sql.VarChar(1000), antecedentes || null)
-        .input("TriajePerimCefalico", sql.Money, null)
-        .input("TriajeFrecCardiaca", sql.Int, null)
+        .input(
+          "TriajePerimCefalico",
+          sql.Money,
+          datosTriaje.TriajePerimCefalico || null
+        )
+        .input(
+          "TriajeFrecCardiaca",
+          sql.Int,
+          datosTriaje.TriajeFrecCardiaca || null
+        )
         .input("TriajeOrigen", sql.Int, 1)
-        .input("TriajeSaturacion", sql.Int, null)
-        .input("TriajePerimAbdominal", sql.Money, null)
+        .input(
+          "TriajeSaturacion",
+          sql.Int,
+          datosTriaje.TriajeSaturacion || null
+        )
+        .input(
+          "TriajePerimAbdominal",
+          sql.Money,
+          datosTriaje.TriajePerimAbdominal || null
+        )
         .input("IdUsuarioAuditoria", sql.Int, idUsuario)
         .execute("usp_insert_atencionesCEAgregar_20230926");
     }
@@ -984,6 +934,110 @@ export const registrarAtencionCE = async (req, res) => {
       success: false,
       message: "Error al registrar la atención",
       error: error.message || error,
+    });
+  }
+};
+
+export const postDatosAdicionalesPAciente = async (req, res) => {
+  try {
+  } catch (error) {
+    console.error(`Error al registrar `);
+  }
+};
+
+export const resumenCitasTriajeDelDia = async (req, res) => {
+  try {
+    const pool = await Conexion();
+
+    let filtroEspecialidades = '';
+
+    // Filtro dinámico por especialidades y médico
+    if (req.filtroEspecialidades && Array.isArray(req.filtroEspecialidades) && req.filtroEspecialidades.length > 0) {
+      filtroEspecialidades += ` AND s.IdServicio IN (${req.filtroEspecialidades.join(',')})`;
+
+      if (req.usuario?.isMedico && req.usuario?.idMedico) {
+        filtroEspecialidades += ` AND me.IdMedico = ${req.usuario.idMedico}`;
+      }
+    }
+
+    // Servicios que NO requieren triaje
+    const serviciosNoAplicaTriaje = [149, 367, 312, 346, 347, 358].join(',');
+
+    const resumenQuery = await pool.request().query(`
+      WITH CitasFiltradas AS (
+        SELECT 
+            c.IdCita,
+            c.IdAtencion,
+            s.IdServicio,
+            a.FyHFinal
+        FROM ProgramacionMedica p
+        INNER JOIN Citas c 
+            ON p.IdProgramacion = c.IdProgramacion
+            AND c.Fecha >= CAST(GETDATE() AS DATE)
+            AND c.Fecha < DATEADD(DAY, 1, CAST(GETDATE() AS DATE))
+        INNER JOIN Servicios s ON p.IdServicio = s.IdServicio
+        INNER JOIN sigh..Atenciones a ON c.IdAtencion = a.IdAtencion
+        INNER JOIN Medicos me ON p.IdMedico = me.IdMedico
+        WHERE s.IdServicio IN (145, 149, 230, 312, 346, 347, 358, 367, 407, 439)
+        ${filtroEspecialidades}
+      ),
+      TriajesExistentes AS (
+        SELECT DISTINCT idAtencion
+        FROM SIGH_EXTERNA..atencionesCE
+      )
+
+      SELECT 
+        COUNT(*) AS TotalCitas,
+        COUNT(CASE WHEN FyHFinal IS NULL THEN 1 END) AS CitasPendientes,
+        COUNT(CASE WHEN FyHFinal IS NOT NULL THEN 1 END) AS CitasAtendidas,
+
+        -- Triajes completados: TODOS los triajes registrados, independientemente del servicio
+        COUNT(CASE 
+            WHEN te.idAtencion IS NOT NULL THEN 1
+            ELSE NULL
+        END) AS TriajesCompletados,
+
+        -- Triajes pendientes: solo en servicios que requieren triaje y no tienen triaje
+        COUNT(CASE 
+            WHEN cf.IdServicio NOT IN (${serviciosNoAplicaTriaje}) AND te.idAtencion IS NULL THEN 1
+            ELSE NULL
+        END) AS TriajesPendientes,
+
+        -- Triajes registrados en servicios que NO requieren triaje (para auditoría)
+        COUNT(CASE 
+            WHEN cf.IdServicio IN (${serviciosNoAplicaTriaje}) AND te.idAtencion IS NOT NULL THEN 1
+            ELSE NULL
+        END) AS TriajesRegistradosNoAplica,
+
+        -- Triajes no aplica: servicios que no requieren triaje y no tienen triaje registrado
+        COUNT(CASE 
+            WHEN cf.IdServicio IN (${serviciosNoAplicaTriaje}) AND te.idAtencion IS NULL THEN 1
+            ELSE NULL
+        END) AS TriajesNoAplica
+      FROM CitasFiltradas cf
+      LEFT JOIN TriajesExistentes te ON cf.IdAtencion = te.idAtencion;
+    `);
+
+    const resumen = resumenQuery.recordset[0];
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        totalCitas: resumen.TotalCitas,
+        citasPendientes: resumen.CitasPendientes,
+        citasAtendidas: resumen.CitasAtendidas,
+        triajesCompletados: resumen.TriajesCompletados,
+        triajesPendientes: resumen.TriajesPendientes,
+        triajesNoAplica: resumen.TriajesNoAplica,
+        triajesRegistradosNoAplica: resumen.TriajesRegistradosNoAplica // Auditoría
+      },
+    });
+  } catch (error) {
+    console.error("Error en resumenCitasTriajeDelDia:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error al obtener el resumen de citas y triaje del día",
+      error: error.message,
     });
   }
 };

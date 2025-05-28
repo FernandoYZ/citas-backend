@@ -11,6 +11,17 @@ export async function obtenerCitasSeparadas(fecha) {
     return res
 }
 
+export async function obtenerCitasMedicoEstrategia(fecha, IdMedico) {
+
+    if (!fecha || !IdMedico) throw new Error('FECHA_REQUERIDA')
+
+    const fechaDate = new Date(fecha);
+    if (isNaN(fechaDate.getTime())) throw new Error('PARAMETROS_INVALIDOS')
+
+        const res = await Citas.obtenerCitasMedicoEstrategia(fechaDate, IdMedico);
+    return res
+}
+
 export async function selectEspecialidad (fecha) {
     if (!fecha) throw new Error('FECHA_REQUERIDA')
 

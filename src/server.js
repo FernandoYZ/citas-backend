@@ -3,7 +3,7 @@ import app from './app.js';
 import { Conexion, ConexionExterna, cerrarConexiones } from './config/database.js';
 import 'dotenv/config';
 
-const HOST = '192.168.220.230'
+const HOST = 'localhost'
 const PORT = process.env.PORT || 3055;
 
 const startServer = async () => {
@@ -16,7 +16,7 @@ const startServer = async () => {
       console.log('Conexiones a bases de datos establecidas correctamente');
       
       // Iniciar el servidor
-      const server = app.listen(PORT, HOST, () => {
+      const server = app.listen(PORT, HOST,() => {
         console.log(`API disponible en http://${HOST}:${PORT}/api`);
       });
       

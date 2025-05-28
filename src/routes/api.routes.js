@@ -1,3 +1,4 @@
+// routes/api.routes.js
 import { Router } from "express";
 import citasRoutes from "../modules/citas/citas.routes.js";
 import authRoutes from "../modules/auth/auth.routes.js";

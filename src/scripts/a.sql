@@ -1,6 +1,26 @@
-/*
-Probar Procedimientos almacenados
-*/
+DROP INDEX IF EXISTS IX_farmSaldo_cantidad ON dbo.farmSaldo;
+DROP INDEX IF EXISTS IX_farmSaldo_producto_almacen ON dbo.farmSaldo;
+
+-- Eliminar índice de la tabla farmAlmacen
+DROP INDEX IF EXISTS IX_farmAlmacen_tipo ON dbo.farmAlmacen;
+
+-- Eliminar índice de la tabla FactCatalogoBienesInsumos
+DROP INDEX IF EXISTS IX_FactCatalogo_busqueda ON dbo.FactCatalogoBienesInsumos;
+
+select Usuario, LTRIM(RTRIM(DNI)) as DNI from Empleados where Usuario ='ngaspar'
+
+SELECT 
+    pa.IdPaciente,
+    TDI.Descripcion as TipoDocumento,
+    pa.NroDocumento,
+    pa.ApellidoPaterno + ' ' + pa.ApellidoMaterno AS ApellidosPaciente,
+    UPPER(RTRIM(pa.PrimerNombre + ' ' + ISNULL(PA.SegundoNombre, '') + ' ' + ISNULL(PA.TercerNombre,''))) AS NombrePaciente,
+    pa.NroHistoriaClinica,
+    PA.FechaNacimiento
+FROM Pacientes PA 
+INNER JOIN TiposDocIdentidad TDI on PA.IdDocIdentidad=TDI.IdDocIdentidad
+WHERE NroDocumento='62962727'
+
 
 exec MedicosPorFiltroConEspecialidad ' where EsActivo = 1  order by Nombre'
 
@@ -32,8 +52,6 @@ exec CatalogoServiciosHospSeleccionarXidProductoIdTipoFinanciamiento 4584,16
 
 exec PacientesTieneCita ' where  dbo.Citas.Fecha = ''29/04/2025'' and dbo.Citas.IdServicio = 149'
 
-
-select * from ServiciosAccesibles
 
 DECLARE @idServicio int = 149
 SELECT s.IdServicio, s.Nombre, s.IdEspecialidad
@@ -75,6 +93,10 @@ SELECT IdTipoSexo FROM Pacientes where IdPaciente=@IdPaciente
 
 select * from TiposSexo
 
+select * from UsuariosRoles
+
+SELECT * from Roles
+
 INSERT INTO ProgramacionMedica (
     IdMedico,
     IdDepartamento,
@@ -93,22 +115,26 @@ INSERT INTO ProgramacionMedica (
     HoraFinProgramacion
 )
 VALUES (
-    535,
+    555,
     5,
-    '20250430',
-    '14:00',
-    '16:00',
+    '20250507',
+    '08:00',
+    '12:00',
     1,
     NULL,
-    38,
+    36,
     NULL,
     -2147483643,  
-    145,          
+    228,          
     1,         
-    '20250430',
+    '20250507',
     15,
-    '16:00'
+    '12:00'
 );
+
+SELECT * from Empleados where Nombres like '%Roxana%' and ApellidoPaterno like '%Araujo%'
+
+select * from Medicos where IdEmpleado=3444
 
 select*from Diagnosticos where CodigoCIE2004 like '%u16%'
 
@@ -286,7 +312,7 @@ INNER JOIN Empleados e ON me.IdEmpleado = e.IdEmpleado
 INNER JOIN Especialidades es ON s.IdEspecialidad = es.IdEspecialidad 
 INNER JOIN DepartamentosHospital d ON es.IdDepartamento = d.IdDepartamento
 WHERE pa.NroDocumento IS NOT NULL
-AND s.IdServicio IN (145, 149, 230, 312, 346, 347, 358, 367, 407);
+AND s.IdServicio IN (145, 149, 230, 312, 346, 347, 358, 367, 407, 439);
 
 
 declare @idMedico int = 535;
@@ -333,5 +359,7 @@ WITH HorasProgramadas AS (
           )
       ORDER BY 
           HoraInicioDisponible;
+
+
 
 

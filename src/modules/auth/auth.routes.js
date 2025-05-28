@@ -1,3 +1,4 @@
+// src/modules/auth/auth.routes.js
 import { Router } from 'express';
 import { iniciarSesion, verificarToken } from './auth.controller.js';
 
